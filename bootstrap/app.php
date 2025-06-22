@@ -1,28 +1,29 @@
 <?php
-
 use Illuminate\Foundation\Application;
-use Illuminate\Foundation\Configuration\Exceptions;
+use App\Http\Middleware\CheckUserActive;
 use Illuminate\Foundation\Configuration\Middleware;
 
 return Application::configure(basePath: dirname(__DIR__))
-    ->withRouting(
-        web: __DIR__ . '/../routes/web.php',
-        api: __DIR__ . '/../routes/api.php',
-        commands: __DIR__ . '/../routes/console.php',
-        health: '/up',
-    )
-    ->withMiddleware(function ($middleware) {
-        $middleware->api(prepend: [
-            \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
-        ]);
-        $middleware->redirectGuestsTo(fn($req) => '/up');
-        // Register abilities middleware aliases
-        $middleware->alias([
-            'abilities' => \Laravel\Sanctum\Http\Middleware\CheckAbilities::class,
-            'ability'  => \Laravel\Sanctum\Http\Middleware\CheckForAnyAbility::class,
-        ]);
-    })
+    // ...
+    ->withMiddleware(function (Middleware $middleware): void {
+        // Optionally keep Sanctum
+        // The 'prepend' option adds middleware to the beginning of the API middleware stack.
+                $middleware->api(prepend: [
+                    \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
+                ]);
 
-    ->withExceptions(function (Exceptions $exceptions): void {
-        //
-    })->create();
+        // Redirect guests to '/up' for custom guest handling
+                $middleware->redirectGuestsTo(fn () => '/up');
+        $middleware->redirectGuestsTo(fn ($req) => '/up');
+
+        // Add your middleware alias
+        $middleware->alias([
+            'active' => CheckUserActive::class,
+            // other aliases...
+        ]);
+
+        // (Optional) Apply to all API routes globally:
+        // $middleware->api(append: [CheckUserActive::class]);
+    })
+    // ...
+    ->create();
